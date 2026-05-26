@@ -7,6 +7,7 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
+			"./1779789420140448106.html"
 	],
 	prefix: "",
 	theme: {
@@ -17,8 +18,19 @@ export default {
 				'2xl': '1400px'
 			}
 		},
+		fontFamily: {
+			sans: ['Golos Text', 'sans-serif'],
+		},
 		extend: {
 			colors: {
+				messenger: {
+					blue: '#0066FF',
+					'blue-light': '#E8F0FE',
+					'blue-dark': '#0052CC',
+					gray: '#F7F8FA',
+					'gray-2': '#ECEEF2',
+					'text-secondary': '#8A8F9C',
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
