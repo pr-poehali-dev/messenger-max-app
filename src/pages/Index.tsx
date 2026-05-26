@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import ChatList from '@/components/messenger/ChatList';
 import ChatWindow from '@/components/messenger/ChatWindow';
@@ -7,6 +7,8 @@ import NotificationsPanel from '@/components/messenger/NotificationsPanel';
 import ProfilePanel from '@/components/messenger/ProfilePanel';
 import SettingsPanel from '@/components/messenger/SettingsPanel';
 import CallModal from '@/components/messenger/CallModal';
+import AuthScreen from '@/components/messenger/AuthScreen';
+import { loadSession, getMe, clearSession, User } from '@/lib/auth';
 
 type Tab = 'chats' | 'contacts' | 'notifications' | 'profile' | 'settings';
 
@@ -19,16 +21,59 @@ const chatNames: Record<number, string> = {
 };
 
 export default function Index() {
+  const [authState, setAuthState] = useState<'loading' | 'auth' | 'app'>('loading');
+  const [token, setToken] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+
   const [activeTab, setActiveTab] = useState<Tab>('chats');
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [call, setCall] = useState<{ type: 'voice' | 'video'; chatId: number } | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const handleStartChat = (contactId: number) => {
-    setActiveChat(contactId);
-    setActiveTab('chats');
+  useEffect(() => {
+    const session = loadSession();
+    if (!session) { setAuthState('auth'); return; }
+    getMe(session.token).then(res => {
+      if (res.ok) {
+        setToken(session.token);
+        setUser(res.data.user);
+        setAuthState('app');
+      } else {
+        clearSession();
+        setAuthState('auth');
+      }
+    }).catch(() => {
+      setToken(session.token);
+      setUser(session.user);
+      setAuthState('app');
+    });
+  }, []);
+
+  const handleAuth = (t: string, u: User) => {
+    setToken(t); setUser(u); setAuthState('app');
   };
+
+  const handleLogout = () => {
+    setToken(''); setUser(null); setAuthState('auth');
+  };
+
+  if (authState === 'loading') {
+    return (
+      <div className="h-screen flex items-center justify-center bg-messenger-gray">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-messenger-blue flex items-center justify-center shadow-md">
+            <Icon name="Zap" size={22} className="text-white" />
+          </div>
+          <div className="w-5 h-5 border-2 border-messenger-blue/30 border-t-messenger-blue rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (authState === 'auth') {
+    return <AuthScreen onAuth={handleAuth} />;
+  }
 
   const navItems: { tab: Tab; icon: string; label: string; badge?: number }[] = [
     { tab: 'chats', icon: 'MessageCircle', label: 'Чаты', badge: 8 },
@@ -71,9 +116,10 @@ export default function Index() {
         <div className="mt-auto">
           <button
             onClick={() => setActiveTab('profile')}
+            title="Профиль"
             className="w-9 h-9 rounded-full bg-gradient-to-br from-messenger-blue to-blue-400 flex items-center justify-center text-base hover:opacity-90 transition-opacity"
           >
-            🧑‍💻
+            {user?.avatar || '🧑'}
           </button>
         </div>
       </div>
@@ -104,17 +150,15 @@ export default function Index() {
 
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'chats' && (
-            <ChatList
-              activeChat={activeChat}
-              onSelectChat={setActiveChat}
-              searchQuery={searchQuery}
-            />
+            <ChatList activeChat={activeChat} onSelectChat={setActiveChat} searchQuery={searchQuery} />
           )}
           {activeTab === 'contacts' && (
-            <ContactsPanel onStartChat={handleStartChat} searchQuery={searchQuery} />
+            <ContactsPanel onStartChat={(id) => { setActiveChat(id); setActiveTab('chats'); }} searchQuery={searchQuery} />
           )}
           {activeTab === 'notifications' && <NotificationsPanel />}
-          {activeTab === 'profile' && <ProfilePanel />}
+          {activeTab === 'profile' && user && (
+            <ProfilePanel user={user} token={token} onLogout={handleLogout} />
+          )}
           {activeTab === 'settings' && <SettingsPanel />}
         </div>
       </div>
