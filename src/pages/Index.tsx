@@ -78,112 +78,113 @@ export default function Index() {
     { tab: 'chats', icon: 'MessageCircle', label: 'Чаты' },
     { tab: 'notifications', icon: 'Bell', label: 'Уведомления' },
     { tab: 'settings', icon: 'Settings', label: 'Настройки' },
+    { tab: 'profile', icon: 'User', label: 'Профиль' },
   ];
 
+  const showChat = activeTab === 'chats' && activeChat !== null;
+
   return (
-    <div className="h-screen flex bg-white overflow-hidden font-sans">
-      {/* Left panel */}
-      <div className="w-72 flex flex-col border-r border-gray-100 bg-white flex-shrink-0">
-        {/* Header */}
-        <div className="px-4 pt-4 pb-2 border-b border-gray-100">
-          {/* Logo + profile */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-messenger-blue flex items-center justify-center">
-                <Icon name="Zap" size={14} className="text-white" />
-              </div>
-              <span className="font-bold text-sm text-gray-900">МессенджерМакс</span>
-            </div>
-            <button
-              onClick={() => setActiveTab('profile')}
-              title="Профиль"
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-base hover:opacity-90 transition-all ${activeTab === 'profile' ? 'ring-2 ring-messenger-blue ring-offset-1' : ''}`}
-            >
-              {user?.avatar || '🧑'}
-            </button>
-          </div>
+    <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
 
-          {/* Nav tabs */}
-          <div className="flex gap-1">
-            {navItems.map(item => (
-              <button
-                key={item.tab}
-                onClick={() => setActiveTab(item.tab)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  activeTab === item.tab
-                    ? 'bg-messenger-blue text-white'
-                    : 'text-messenger-text-secondary hover:bg-messenger-gray'
-                }`}
-              >
-                <Icon name={item.icon} size={13} />
-                {item.label}
-              </button>
-            ))}
+      {/* TOP HEADER */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-messenger-blue flex items-center justify-center shadow-sm">
+            <Icon name="Zap" size={16} className="text-white" />
           </div>
+          <span className="font-bold text-base text-gray-900">МессенджерМакс</span>
         </div>
-
-        {/* Search (chats only) */}
         {activeTab === 'chats' && (
-          <div className="px-3 py-2 border-b border-gray-100">
-            <div className={`flex items-center gap-2 bg-messenger-gray rounded-xl px-3 py-2 transition-all ${searchFocused ? 'ring-2 ring-messenger-blue/20' : ''}`}>
-              <Icon name="Search" size={14} className="text-messenger-text-secondary flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Поиск чатов..."
-                className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder:text-messenger-text-secondary"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-messenger-text-secondary hover:text-gray-600">
-                  <Icon name="X" size={13} />
-                </button>
-              )}
-            </div>
+          <div className={`flex items-center gap-2 bg-messenger-gray rounded-xl px-3 py-2 w-48 transition-all ${searchFocused ? 'ring-2 ring-messenger-blue/20' : ''}`}>
+            <Icon name="Search" size={14} className="text-messenger-text-secondary flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Поиск..."
+              className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder:text-messenger-text-secondary min-w-0"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}>
+                <Icon name="X" size={13} className="text-messenger-text-secondary" />
+              </button>
+            )}
           </div>
         )}
-
-        {/* Panel content */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 'chats' && (
-            <ChatList activeChat={activeChat} onSelectChat={setActiveChat} searchQuery={searchQuery} />
-          )}
-          {activeTab === 'notifications' && <NotificationsPanel />}
-          {activeTab === 'profile' && user && (
-            <ProfilePanel user={user} token={token} onLogout={handleLogout} />
-          )}
-          {activeTab === 'settings' && <SettingsPanel />}
+        {activeTab !== 'chats' && (
+          <span className="text-sm font-semibold text-gray-700">
+            {navItems.find(n => n.tab === activeTab)?.label}
+          </span>
+        )}
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-messenger-blue to-blue-400 flex items-center justify-center text-base cursor-default select-none">
+          {user?.avatar || '🧑'}
         </div>
       </div>
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {activeTab === 'chats' ? (
-          <ChatWindow
-            chatId={activeChat}
-            onCall={(type) => activeChat && setCall({ type, chatId: activeChat })}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center bg-messenger-gray">
-            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-4 shadow-sm">
-              <Icon
-                name={navItems.find(n => n.tab === activeTab)?.icon || 'MessageCircle'}
-                size={28}
-                className="text-messenger-blue"
+      {/* MAIN CONTENT */}
+      <div className="flex-1 overflow-hidden">
+        {/* Chats tab — split: list + window */}
+        {activeTab === 'chats' && (
+          <div className="flex h-full">
+            <div className="w-72 flex-shrink-0 border-r border-gray-100 overflow-y-auto">
+              <ChatList activeChat={activeChat} onSelectChat={setActiveChat} searchQuery={searchQuery} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <ChatWindow
+                chatId={activeChat}
+                onCall={(type) => activeChat && setCall({ type, chatId: activeChat })}
               />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">
-              {navItems.find(n => n.tab === activeTab)?.label}
-            </h3>
-            <p className="text-sm text-messenger-text-secondary">
-              {activeTab === 'notifications' && 'Уведомления отображаются слева'}
-              {activeTab === 'profile' && 'Управляйте профилем в левой панели'}
-              {activeTab === 'settings' && 'Настройте приложение в левой панели'}
-            </p>
           </div>
         )}
+
+        {activeTab === 'notifications' && (
+          <div className="h-full overflow-y-auto">
+            <NotificationsPanel />
+          </div>
+        )}
+
+        {activeTab === 'profile' && user && (
+          <div className="h-full overflow-y-auto">
+            <ProfilePanel user={user} token={token} onLogout={handleLogout} />
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="h-full overflow-y-auto">
+            <SettingsPanel />
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div className="flex-shrink-0 border-t border-gray-100 bg-white">
+        <div className="flex">
+          {navItems.map(item => (
+            <button
+              key={item.tab}
+              onClick={() => setActiveTab(item.tab)}
+              className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
+                activeTab === item.tab
+                  ? 'text-messenger-blue'
+                  : 'text-messenger-text-secondary hover:text-gray-600'
+              }`}
+            >
+              <div className="relative">
+                <Icon name={item.icon} size={22} />
+                {item.tab === 'notifications' && activeTab !== 'notifications' && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white" />
+                )}
+              </div>
+              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              {activeTab === item.tab && (
+                <span className="w-1 h-1 rounded-full bg-messenger-blue" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Call modal */}
