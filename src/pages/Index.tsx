@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import ChatList from '@/components/messenger/ChatList';
 import ChatWindow from '@/components/messenger/ChatWindow';
-import ContactsPanel from '@/components/messenger/ContactsPanel';
 import NotificationsPanel from '@/components/messenger/NotificationsPanel';
 import ProfilePanel from '@/components/messenger/ProfilePanel';
 import SettingsPanel from '@/components/messenger/SettingsPanel';
@@ -10,7 +9,7 @@ import CallModal from '@/components/messenger/CallModal';
 import AuthScreen from '@/components/messenger/AuthScreen';
 import { loadSession, getMe, clearSession, User } from '@/lib/auth';
 
-type Tab = 'chats' | 'contacts' | 'notifications' | 'profile' | 'settings';
+type Tab = 'chats' | 'notifications' | 'profile' | 'settings';
 
 const chatAvatars: Record<number, string> = {
   1: '👩', 2: '💼', 3: '👨', 4: '🏠', 5: '👩‍🦰', 6: '🛠', 7: '🧑',
@@ -75,68 +74,66 @@ export default function Index() {
     return <AuthScreen onAuth={handleAuth} />;
   }
 
-  const navItems: { tab: Tab; icon: string; label: string; badge?: number }[] = [
-    { tab: 'chats', icon: 'MessageCircle', label: 'Чаты', badge: 8 },
-    { tab: 'contacts', icon: 'Users', label: 'Контакты' },
-    { tab: 'notifications', icon: 'Bell', label: 'Уведомления', badge: 3 },
-    { tab: 'profile', icon: 'User', label: 'Профиль' },
+  const navItems: { tab: Tab; icon: string; label: string }[] = [
+    { tab: 'chats', icon: 'MessageCircle', label: 'Чаты' },
+    { tab: 'notifications', icon: 'Bell', label: 'Уведомления' },
     { tab: 'settings', icon: 'Settings', label: 'Настройки' },
   ];
 
   return (
     <div className="h-screen flex bg-white overflow-hidden font-sans">
-      {/* Sidebar nav */}
-      <div className="w-16 flex flex-col items-center py-4 border-r border-gray-100 bg-white z-10">
-        <div className="w-9 h-9 rounded-xl bg-messenger-blue flex items-center justify-center mb-6 shadow-sm">
-          <Icon name="Zap" size={18} className="text-white" />
-        </div>
-
-        <nav className="flex flex-col items-center gap-1 flex-1">
-          {navItems.map(item => (
-            <button
-              key={item.tab}
-              onClick={() => setActiveTab(item.tab)}
-              title={item.label}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                activeTab === item.tab
-                  ? 'bg-messenger-blue text-white shadow-sm'
-                  : 'text-messenger-text-secondary hover:bg-messenger-gray hover:text-gray-700'
-              }`}
-            >
-              <Icon name={item.icon} size={19} />
-              {item.badge && activeTab !== item.tab && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div className="mt-auto">
-          <button
-            onClick={() => setActiveTab('profile')}
-            title="Профиль"
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-messenger-blue to-blue-400 flex items-center justify-center text-base hover:opacity-90 transition-opacity"
-          >
-            {user?.avatar || '🧑'}
-          </button>
-        </div>
-      </div>
-
       {/* Left panel */}
-      <div className="w-72 flex flex-col border-r border-gray-100 bg-white">
-        {(activeTab === 'chats' || activeTab === 'contacts') && (
-          <div className="px-3 py-3 border-b border-gray-100">
+      <div className="w-72 flex flex-col border-r border-gray-100 bg-white flex-shrink-0">
+        {/* Header */}
+        <div className="px-4 pt-4 pb-2 border-b border-gray-100">
+          {/* Logo + profile */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-messenger-blue flex items-center justify-center">
+                <Icon name="Zap" size={14} className="text-white" />
+              </div>
+              <span className="font-bold text-sm text-gray-900">МессенджерМакс</span>
+            </div>
+            <button
+              onClick={() => setActiveTab('profile')}
+              title="Профиль"
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-base hover:opacity-90 transition-all ${activeTab === 'profile' ? 'ring-2 ring-messenger-blue ring-offset-1' : ''}`}
+            >
+              {user?.avatar || '🧑'}
+            </button>
+          </div>
+
+          {/* Nav tabs */}
+          <div className="flex gap-1">
+            {navItems.map(item => (
+              <button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  activeTab === item.tab
+                    ? 'bg-messenger-blue text-white'
+                    : 'text-messenger-text-secondary hover:bg-messenger-gray'
+                }`}
+              >
+                <Icon name={item.icon} size={13} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search (chats only) */}
+        {activeTab === 'chats' && (
+          <div className="px-3 py-2 border-b border-gray-100">
             <div className={`flex items-center gap-2 bg-messenger-gray rounded-xl px-3 py-2 transition-all ${searchFocused ? 'ring-2 ring-messenger-blue/20' : ''}`}>
-              <Icon name="Search" size={15} className="text-messenger-text-secondary flex-shrink-0" />
+              <Icon name="Search" size={14} className="text-messenger-text-secondary flex-shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                placeholder={activeTab === 'chats' ? 'Поиск чатов...' : 'Поиск контактов...'}
+                placeholder="Поиск чатов..."
                 className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder:text-messenger-text-secondary"
               />
               {searchQuery && (
@@ -148,12 +145,10 @@ export default function Index() {
           </div>
         )}
 
+        {/* Panel content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'chats' && (
             <ChatList activeChat={activeChat} onSelectChat={setActiveChat} searchQuery={searchQuery} />
-          )}
-          {activeTab === 'contacts' && (
-            <ContactsPanel onStartChat={(id) => { setActiveChat(id); setActiveTab('chats'); }} searchQuery={searchQuery} />
           )}
           {activeTab === 'notifications' && <NotificationsPanel />}
           {activeTab === 'profile' && user && (
@@ -183,8 +178,7 @@ export default function Index() {
               {navItems.find(n => n.tab === activeTab)?.label}
             </h3>
             <p className="text-sm text-messenger-text-secondary">
-              {activeTab === 'contacts' && 'Выберите контакт, чтобы начать диалог'}
-              {activeTab === 'notifications' && 'Все уведомления отображаются слева'}
+              {activeTab === 'notifications' && 'Уведомления отображаются слева'}
               {activeTab === 'profile' && 'Управляйте профилем в левой панели'}
               {activeTab === 'settings' && 'Настройте приложение в левой панели'}
             </p>
