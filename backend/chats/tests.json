@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Search without token",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "search_users", "query": "test"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

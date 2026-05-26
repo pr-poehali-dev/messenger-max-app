@@ -7,17 +7,11 @@ import ProfilePanel from '@/components/messenger/ProfilePanel';
 import SettingsPanel from '@/components/messenger/SettingsPanel';
 import CallModal from '@/components/messenger/CallModal';
 import AuthScreen from '@/components/messenger/AuthScreen';
+import NewChatModal from '@/components/messenger/NewChatModal';
 import { loadSession, getMe, clearSession, User } from '@/lib/auth';
+import { ChatUser } from '@/lib/chats';
 
 type Tab = 'chats' | 'notifications' | 'profile' | 'settings';
-
-const chatAvatars: Record<number, string> = {
-  1: '👩', 2: '💼', 3: '👨', 4: '🏠', 5: '👩‍🦰', 6: '🛠', 7: '🧑',
-};
-const chatNames: Record<number, string> = {
-  1: 'Анна Королёва', 2: 'Рабочий чат', 3: 'Максим Орлов',
-  4: 'Семья 🏠', 5: 'Катя Смирнова', 6: 'Техподдержка', 7: 'Артём Белов',
-};
 
 export default function Index() {
   const [authState, setAuthState] = useState<'loading' | 'auth' | 'app'>('loading');
@@ -26,9 +20,11 @@ export default function Index() {
 
   const [activeTab, setActiveTab] = useState<Tab>('chats');
   const [activeChat, setActiveChat] = useState<number | null>(null);
+  const [activeChatUser, setActiveChatUser] = useState<ChatUser | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [call, setCall] = useState<{ type: 'voice' | 'video'; chatId: number } | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [call, setCall] = useState<{ type: 'voice' | 'video'; name: string; avatar: string } | null>(null);
 
   useEffect(() => {
     const session = loadSession();
@@ -57,6 +53,12 @@ export default function Index() {
     setToken(''); setUser(null); setAuthState('auth');
   };
 
+  const handleChatOpened = (chatId: number, chatUser: ChatUser) => {
+    setActiveChat(chatId);
+    setActiveChatUser(chatUser);
+    setActiveTab('chats');
+  };
+
   if (authState === 'loading') {
     return (
       <div className="h-screen flex items-center justify-center bg-messenger-gray">
@@ -81,60 +83,75 @@ export default function Index() {
     { tab: 'profile', icon: 'User', label: 'Профиль' },
   ];
 
-  const showChat = activeTab === 'chats' && activeChat !== null;
-
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
 
       {/* TOP HEADER */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-8 h-8 rounded-xl bg-messenger-blue flex items-center justify-center shadow-sm">
             <Icon name="Zap" size={16} className="text-white" />
           </div>
           <span className="font-bold text-base text-gray-900">МессенджерМакс</span>
         </div>
+
+        <div className="flex-1" />
+
         {activeTab === 'chats' && (
-          <div className={`flex items-center gap-2 bg-messenger-gray rounded-xl px-3 py-2 w-48 transition-all ${searchFocused ? 'ring-2 ring-messenger-blue/20' : ''}`}>
-            <Icon name="Search" size={14} className="text-messenger-text-secondary flex-shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              placeholder="Поиск..."
-              className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder:text-messenger-text-secondary min-w-0"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')}>
-                <Icon name="X" size={13} className="text-messenger-text-secondary" />
-              </button>
-            )}
-          </div>
+          <>
+            <div className={`flex items-center gap-2 bg-messenger-gray rounded-xl px-3 py-2 w-44 transition-all ${searchFocused ? 'ring-2 ring-messenger-blue/20' : ''}`}>
+              <Icon name="Search" size={14} className="text-messenger-text-secondary flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="Поиск..."
+                className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder:text-messenger-text-secondary min-w-0"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')}>
+                  <Icon name="X" size={13} className="text-messenger-text-secondary" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setShowNewChat(true)}
+              className="w-9 h-9 rounded-xl bg-messenger-blue text-white flex items-center justify-center hover:bg-messenger-blue-dark transition-colors shadow-sm flex-shrink-0"
+              title="Новый чат"
+            >
+              <Icon name="Plus" size={18} />
+            </button>
+          </>
         )}
-        {activeTab !== 'chats' && (
-          <span className="text-sm font-semibold text-gray-700">
-            {navItems.find(n => n.tab === activeTab)?.label}
-          </span>
-        )}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-messenger-blue to-blue-400 flex items-center justify-center text-base cursor-default select-none">
+
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-messenger-blue to-blue-400 flex items-center justify-center text-base cursor-default select-none flex-shrink-0">
           {user?.avatar || '🧑'}
         </div>
       </div>
 
       {/* MAIN CONTENT */}
       <div className="flex-1 overflow-hidden">
-        {/* Chats tab — split: list + window */}
         {activeTab === 'chats' && (
           <div className="flex h-full">
             <div className="w-72 flex-shrink-0 border-r border-gray-100 overflow-y-auto">
-              <ChatList activeChat={activeChat} onSelectChat={setActiveChat} searchQuery={searchQuery} />
+              <ChatList
+                token={token}
+                activeChat={activeChat}
+                onSelectChat={(id, chatUser) => {
+                  setActiveChat(id);
+                  setActiveChatUser(chatUser);
+                }}
+                searchQuery={searchQuery}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <ChatWindow
                 chatId={activeChat}
-                onCall={(type) => activeChat && setCall({ type, chatId: activeChat })}
+                chatUser={activeChatUser}
+                token={token}
+                onCall={(type) => activeChatUser && setCall({ type, name: activeChatUser.name, avatar: activeChatUser.avatar })}
               />
             </div>
           </div>
@@ -174,9 +191,6 @@ export default function Index() {
             >
               <div className="relative">
                 <Icon name={item.icon} size={22} />
-                {item.tab === 'notifications' && activeTab !== 'notifications' && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white" />
-                )}
               </div>
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
               {activeTab === item.tab && (
@@ -187,12 +201,21 @@ export default function Index() {
         </div>
       </div>
 
+      {/* New chat modal */}
+      {showNewChat && (
+        <NewChatModal
+          token={token}
+          onClose={() => setShowNewChat(false)}
+          onChatOpened={handleChatOpened}
+        />
+      )}
+
       {/* Call modal */}
       {call && (
         <CallModal
           type={call.type}
-          name={chatNames[call.chatId] || 'Пользователь'}
-          avatar={chatAvatars[call.chatId] || '👤'}
+          name={call.name}
+          avatar={call.avatar}
           onClose={() => setCall(null)}
         />
       )}
